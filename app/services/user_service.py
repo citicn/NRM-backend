@@ -1,3 +1,5 @@
+from pymongo.collation import Collation
+from pymongo import ASCENDING
 from app import mongodb
 from app.models.user import User
 from bson import ObjectId
@@ -44,6 +46,7 @@ class UserService:
 
     @staticmethod
     def get_all_users():
-        users = mongodb.db.users.find()
+        coll= Collation(locale='en',strength=2)
+        users = mongodb.db.users.find().sort("username", ASCENDING).collation(coll)
         return [User.from_dict(doc).user_data() for doc in users]
 
