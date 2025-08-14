@@ -15,7 +15,7 @@ class Message:
             "sender_id": self.sender_id,
             "conversation_id": self.conversation_id,
             "text": self.text,
-            "created_at": self.created_at
+            "created_at": self.created_at.isoformat()
         }
 
     @staticmethod

@@ -25,5 +25,5 @@ class Conversation:
             "members": self.members,
             "conversation_type": self.conversation_type,
             "name": self.name,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at
         }

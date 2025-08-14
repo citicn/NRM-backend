@@ -15,7 +15,7 @@ class UserService:
     @staticmethod
     def get_user_by_username(username):
         user = mongodb.db.users.find_one({"username": username})
-        return User.from_dict(user).user_data() if user else None
+        return User.from_dict(user) if user else None
 
     @staticmethod
     def get_user_by_id(user_id):
