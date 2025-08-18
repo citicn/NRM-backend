@@ -11,8 +11,9 @@ class ConversationService:
 
         convType = data.get("conversation_type")
         gName = data.get("name") if convType == "group" else None
+        admin = cUserId if convType == "group" else None
 
-        conversation = Conversation(members=members, conversation_type=convType, name=gName)
+        conversation = Conversation(members=members, conversation_type=convType, name=gName, admin=admin)
         result = mongodb.db.conversations.insert_one(conversation.to_dict())
         conversation._id = result.inserted_id
 
@@ -37,9 +38,9 @@ class ConversationService:
         return Conversation.from_dict(conv) if conv else None
 
     @staticmethod
-    def get_all_conversations_for_user(current_user_id):
+    def get_all_conversations_for_user(cUserId):
         conversations = list(mongodb.db.conversations.find({
-            "members": {"$in": [current_user_id]}
+            "members": {"$in": [cUserId]}
         }))
 
         results = []
@@ -80,7 +81,8 @@ class ConversationService:
                 "members": membersData,
                 "conversation_type": conv.get("conversation_type"),
                 "name": conv.get("name"),
-                "last_message": msg
+                "last_message": msg,
+                "admin": conv.get("admin")
             })
 
         results.sort(
@@ -89,3 +91,63 @@ class ConversationService:
         )
 
         return results
+
+    @staticmethod
+    def add_member(convId, membersId, cUserId):
+        conv = mongodb.db.conversations.find_one({"_id": ObjectId(convId)})
+        if not conv:
+            return {"error": "Konverzacija ne postoji"}, 404
+
+        if conv.get("admin") != cUserId:
+            return {"error": "Samo admin moze dodavati nove clanove"}, 403
+
+        updatedMembers = set(conv["members"])
+        updatedMembers.update(membersId)
+
+        mongodb.db.conversations.update_one(
+                {"_id": ObjectId(convId)},
+                {"$set": {"members": list(updatedMembers)}}
+            )
+
+        updatedConv = mongodb.db.conversations.find_one({"_id": ObjectId(convId)})
+        return Conversation.from_dict(updatedConv).to_dict(), 200
+
+    @staticmethod
+    def remove_member(convId, membersId, cUserId):
+        conv = mongodb.db.conversations.find_one({"_id": ObjectId(convId)})
+        if not conv:
+            return {"error": "Konverzacija ne postoji"}, 404
+
+        if conv.get("admin") != cUserId:
+            return {"error": "Samo admin moze uklanjati clanove"}, 403
+
+        if membersId == conv.get("admin"):
+            return {"error": "Ne mozes obrisati admina"}, 400
+
+        updatedMembers=[m for m in conv["members"] if m not in membersId]
+
+        mongodb.db.conversations.update_one(
+                {"_id": ObjectId(convId)},
+                {"$set": {"members": updatedMembers}}
+            )
+
+        updatedConv = mongodb.db.conversations.find_one({"_id": ObjectId(convId)})
+        return Conversation.from_dict(updatedConv).to_dict(), 200
+
+    @staticmethod
+    def delete_group(convId, cUserId):
+        conversation = mongodb.db.conversations.find_one({"_id": ObjectId(convId)})
+        if not conversation:
+            return {"error": "Konverzacija ne postoji"}, 404
+
+        if conversation.get("admin") != cUserId:
+            return {"error": "Samo admin moze obrisati grupu"}, 403
+
+        mongodb.db.messages.delete_many({"conversation_id": str(convId)})
+        mongodb.db.conversations.delete_one({"_id": ObjectId(convId)})
+
+        return {"message": "Grupa uspesno obrisana"}, 200
+
+
+
+

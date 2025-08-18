@@ -40,3 +40,23 @@ def get_all_conv():
     cUserId = get_jwt_identity()
     results = ConversationService.get_all_conversations_for_user(cUserId)
     return jsonify(results), 200
+
+@conversationsBp.route("/conversations/<conversation_id>/add_members", methods=["PUT"])
+def add_member(conversation_id):
+    data= request.get_json()
+    membersId= data.get("members_id",[])
+    cUserId=get_jwt_identity()
+    return ConversationService.add_member(conversation_id, membersId, cUserId)
+
+@conversationsBp.route("/conversations/<conversation_id>/remove_members", methods=["PUT"])
+def rmv_member(conversation_id):
+    data= request.get_json()
+    membersId= data.get("members_id",[])
+    cUserId=get_jwt_identity()
+    return ConversationService.remove_member(conversation_id, membersId, cUserId)
+
+@conversationsBp.route("/conversations/<conversation_id>", methods=["DELETE"])
+@jwt_required()
+def delete_group(conversation_id):
+    cUserId = get_jwt_identity()
+    return ConversationService.delete_group(conversation_id, cUserId)
