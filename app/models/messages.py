@@ -8,14 +8,14 @@ class Message:
         self.sender_id = sender_id
         self.conversation_id = conversation_id
         self.text = text
-        self.created_at = datetime.now() or created_at
+        self.created_at = created_at or datetime.now()
 
     def to_dict(self):
         return {
             "sender_id": self.sender_id,
             "conversation_id": self.conversation_id,
             "text": self.text,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at
         }
 
     @staticmethod
